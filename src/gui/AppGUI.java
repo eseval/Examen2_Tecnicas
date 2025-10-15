@@ -5,6 +5,12 @@ import gestion.Logistica;
 import java.awt.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.text.AbstractDocument;
+
+import servicios.EnvioServicio;
+import servicios.MascaraAlfaNumerica;
+import servicios.MascaraDecimal;
+import servicios.ResultadoEnvioDto;
 
 public class AppGUI extends JFrame {
 
@@ -16,6 +22,7 @@ public class AppGUI extends JFrame {
   private String[] encabezadosEnvios = {"Tipo", "Código", "Cliente", "Peso", "Distancia", "Costo"};
 
   Logistica logistica = new Logistica();
+  EnvioServicio envioServicio = new EnvioServicio(logistica);
 
   public AppGUI() {
     setTitle("Operador Logístico");
@@ -130,6 +137,12 @@ public class AppGUI extends JFrame {
     spEnvios.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 
     add(spEnvios, BorderLayout.CENTER);
+
+    ((AbstractDocument) txtCliente.getDocument()).setDocumentFilter(new MascaraAlfaNumerica());
+    ((AbstractDocument) txtPeso.getDocument()).setDocumentFilter(new MascaraDecimal());
+    ((AbstractDocument) txtDistancia.getDocument()).setDocumentFilter(new MascaraDecimal());
+    ((AbstractDocument) txtNumero.getDocument()).setDocumentFilter(new MascaraAlfaNumerica());
+
   }
 
   // Muestra el panel para agregar un nuevo envío
@@ -141,18 +154,21 @@ public class AppGUI extends JFrame {
   // Eliminar el envío seleccionado
   private void btnQuitarEnvioClick() {
     int fila = tblEnvios.getSelectedRow();
-    if (fila != -1) {
-      String codigo = modeloTabla.getValueAt(fila, 1).toString();
-      boolean fueEliminado = logistica.retirarEnvio(codigo);
-      if (fueEliminado) {
-        System.out.println("Eliminado envío con código: " + codigo);
-      } else {
-        System.out.println("No se encontró envío con código: " + codigo);
-      }
-      actualizarTabla();
-    } else {
+    if (fila == -1) {
       JOptionPane.showMessageDialog(
           this, "Seleccione un envío para eliminar.", "Warning", JOptionPane.WARNING_MESSAGE);
+    } else {
+      String codigo = modeloTabla.getValueAt(fila, 1).toString();
+      ResultadoEnvioDto resultado = envioServicio.eliminarEnvio(codigo);
+      if (resultado.isExito()) {
+        JOptionPane.showMessageDialog(
+            this, resultado.getMensaje(), "Éxito", JOptionPane.INFORMATION_MESSAGE);
+        actualizarTabla();
+      } else {
+        JOptionPane.showMessageDialog(
+            this, "Seleccione un envío para eliminar.", "Warning", JOptionPane.WARNING_MESSAGE);
+        System.out.println("No se pudo eliminar el envío con código: " + codigo);
+      }
     }
   }
 
@@ -163,26 +179,20 @@ public class AppGUI extends JFrame {
     String distanciaString = txtDistancia.getText();
 
     // Validar que los campos estén diligenciados
-    if (codigo.isEmpty() || cliente.isEmpty() || pesoString.isEmpty() || distanciaString.isEmpty()) {
+    if (codigo.isEmpty()
+        || cliente.isEmpty()
+        || pesoString.isEmpty()
+        || distanciaString.isEmpty()) {
       JOptionPane.showMessageDialog(
           this, "Por favor diligencie todos los campos.", "Error", JOptionPane.ERROR_MESSAGE);
       return;
-    }
-
-    // Validar que el código no se repita
-    for (Envio e : logistica.getEnvios()) {
-      if (e.getCodigo().equals(codigo)) {
-        JOptionPane.showMessageDialog(
-            this, "El código ya se encuentra registrado.", "Error", JOptionPane.ERROR_MESSAGE);
-        return;
-      }
     }
 
     double peso;
     double distancia;
     try {
       peso = Double.parseDouble(pesoString);
-        distancia = Double.parseDouble(distanciaString);
+      distancia = Double.parseDouble(distanciaString);
       if (peso <= 0 || distancia <= 0) {
         JOptionPane.showMessageDialog(
             this, "Peso y distancia deben ser mayores a cero.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -204,16 +214,24 @@ public class AppGUI extends JFrame {
       envio = new envio.Maritimo(codigo, cliente, peso, distancia);
     }
 
-    logistica.agregarEnvio(envio);
-    System.out.println("Agregando envío con código: " + codigo);
-    actualizarTabla();
-//    pnlEditarEnvio.setVisible(false);
-    limpiarCampos();
+    ResultadoEnvioDto resultado = envioServicio.agregarEnvio(envio);
+    if (resultado.isExito()) {
+      JOptionPane.showMessageDialog(
+          this,
+          resultado.getMensaje() + "\nCosto: " + resultado.getTarifa(),
+          "Éxito",
+          JOptionPane.INFORMATION_MESSAGE);
+      actualizarTabla();
+      limpiarCampos();
+    } else {
+      JOptionPane.showMessageDialog(
+          this, resultado.getMensaje(), "Error", JOptionPane.ERROR_MESSAGE);
+    }
   }
 
   private void actualizarTabla() {
     modeloTabla.setRowCount(0); // Limpiar tabla
-    for (Envio envio : logistica.getEnvios()) {
+    for (Envio envio : envioServicio.listarEnvios()) {
       modeloTabla.addRow(
           new Object[] {
             envio.getClass().getSimpleName(),
