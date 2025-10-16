@@ -8,18 +8,22 @@ import javax.swing.text.DocumentFilter;
 public class MascaraDecimal extends DocumentFilter {
   @Override
   public void replace(
-      FilterBypass filtro,
-      int offset,
-      int longitud,
-      String caracterDigitado,
-      AttributeSet atributos)
+      FilterBypass filtro, int offset, int length, String caracterDigitado, AttributeSet atributos)
       throws BadLocationException {
     Document documento = filtro.getDocument();
     String textoActual = documento.getText(0, documento.getLength());
-    textoActual += caracterDigitado;
-    if (textoActual.matches("[0-9]+[.]?[0-9]*")) {
+    String nuevoTexto =
+        textoActual.substring(0, offset)
+            + (caracterDigitado == null ? "" : caracterDigitado)
+            + textoActual.substring(offset + length);
 
-      super.insertString(filtro, offset, caracterDigitado, atributos);
+    if (nuevoTexto.isEmpty() || nuevoTexto.matches("[0-9]+[.]?[0-9]*")) {
+      super.replace(filtro, offset, length, caracterDigitado, atributos);
     }
+  }
+
+  @Override
+  public void remove(FilterBypass fb, int offset, int length) throws BadLocationException {
+    super.remove(fb, offset, length);
   }
 }

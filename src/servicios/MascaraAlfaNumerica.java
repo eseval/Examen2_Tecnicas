@@ -12,9 +12,17 @@ public class MascaraAlfaNumerica extends DocumentFilter {
       throws BadLocationException {
     Document documento = filtro.getDocument();
     String textoActual = documento.getText(0, documento.getLength());
-    textoActual += caracterDigitado;
-    if (textoActual.matches("[a-zA-Z0-9]+")) {
-      super.insertString(filtro, offset, caracterDigitado, atributos);
+    String nuevoTexto =
+        textoActual.substring(0, offset)
+            + (caracterDigitado == null ? "" : caracterDigitado)
+            + textoActual.substring(offset + length);
+
+    if (nuevoTexto.isEmpty()||nuevoTexto.matches("[a-zA-Z0-9]+")){
+        super.replace(filtro, offset, length, caracterDigitado, atributos);
     }
+  }
+  @Override
+  public void remove(FilterBypass filtro, int offset, int length) throws BadLocationException {
+    super.remove(filtro, offset, length);
   }
 }

@@ -3,9 +3,9 @@ package servicios;
 public class ResultadoEnvioDto {
   private boolean exito;
   private String mensaje;
-  private double tarifa;
+  private String tarifa;
 
-  public ResultadoEnvioDto(boolean exito, String mensaje, double tarifa) {
+  public ResultadoEnvioDto(boolean exito, String mensaje, String tarifa) {
     this.exito = exito;
     this.mensaje = mensaje;
     this.tarifa = tarifa;
@@ -19,7 +19,7 @@ public class ResultadoEnvioDto {
     return mensaje;
   }
 
-  public double getTarifa() {
+  public String getTarifa() {
     return tarifa;
   }
 }

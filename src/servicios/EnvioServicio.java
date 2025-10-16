@@ -2,6 +2,8 @@ package servicios;
 
 import envio.Envio;
 import gestion.Logistica;
+
+import java.text.DecimalFormat;
 import java.util.List;
 
 public class EnvioServicio {
@@ -13,18 +15,19 @@ public class EnvioServicio {
 
   public ResultadoEnvioDto agregarEnvio(Envio envio){
     if (existeCodigo(envio.getCodigo())){
-      return new ResultadoEnvioDto(false, "El código ya existe", 0);
+      return new ResultadoEnvioDto(false, "El código ya existe", "0");
     }
     logistica.agregarEnvio(envio);
-    return new ResultadoEnvioDto(true, "Envío agregado exitosamente", envio.calcularTarifa());
+    DecimalFormat df = new DecimalFormat("#,##0.00");
+    return new ResultadoEnvioDto(true, "Envío agregado exitosamente", "$ " + df.format(envio.calcularTarifa()));
 }
 
   public ResultadoEnvioDto eliminarEnvio(String codigo){
     boolean eliminado = logistica.retirarEnvio(codigo);
     if(eliminado){
-      return new ResultadoEnvioDto(true, "Envío eliminado correctamente", 0);
+      return new ResultadoEnvioDto(true, "Envío eliminado correctamente", "0");
     } else {
-      return new ResultadoEnvioDto(false, "No se encontró el envío para eliminar", 0);
+      return new ResultadoEnvioDto(false, "No se encontró el envío para eliminar", "0");
     }
   }
 
